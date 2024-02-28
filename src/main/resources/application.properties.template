@@ -1,0 +1,17 @@
+discord.token=
+discord.deepl=
+pixiv.user=
+pixiv.pass=
+
+server.port=7790
+
+spring.servlet.multipart.max-file-size=5000MB
+server.servlet.session.cookie.secure=true
+spring.devtools.restart.additional-paths=templates/**,static/**
+
+spring.datasource.url=jdbc:h2:file:conductor
+spring.datasource.username=
+spring.datasource.password=
+spring.jpa.generate-ddl=true
+#spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
