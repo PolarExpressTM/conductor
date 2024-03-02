@@ -5,6 +5,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.channel.VoiceChannel;
 import discord4j.core.spec.VoiceChannelJoinSpec;
 import lombok.Getter;
 import org.eu.polarexpress.conductor.discord.command.Command;
@@ -72,8 +73,6 @@ public class DiscordBot {
         commands.put("join", event -> Mono.justOrEmpty(event.getMember())
                 .flatMap(Member::getVoiceState)
                 .flatMap(VoiceState::getChannel)
-                // join returns a VoiceConnection which would be required if we were
-                // adding disconnection features, but for now we are just ignoring it.
                 .flatMap(channel -> channel.join(VoiceChannelJoinSpec.builder()
                         .provider(audioManager.getProvider())
                         .build()))
@@ -81,7 +80,29 @@ public class DiscordBot {
         TrackScheduler scheduler = new TrackScheduler(audioManager.getAudioPlayer());
         commands.put("play", event -> Mono.justOrEmpty(event.getMessage().getContent())
                 .map(content -> Arrays.asList(content.split(" ")))
-                .doOnNext(command -> audioManager.getPlayerManager().loadItem(command.get(1), scheduler))
+                .doOnNext(command ->
+                        audioManager.getPlayerManager().loadItem(command.get(1), scheduler))
+                .then());
+        commands.put("volume", event -> Mono.justOrEmpty(event.getMessage().getContent())
+                .map(content -> Arrays.asList(content.split(" ")))
+                .filter(args -> args.size() > 1 && args.get(1).matches("\\d+"))
+                .doOnNext(command ->
+                        audioManager.getAudioPlayer().setVolume(Integer.parseInt(command.get(1))))
+                .then());
+        commands.put("timeframe", event -> Mono.justOrEmpty(event.getMessage().getContent())
+                .map(content -> Arrays.asList(content.split(" ")))
+                .filter(args -> args.size() > 1 && args.get(1).matches("\\d+"))
+                .doOnNext(command ->
+                        audioManager.getAudioPlayer().getPlayingTrack().setPosition(Long.parseLong(command.get(1))))
+                .then());
+        commands.put("pause", event -> Mono.justOrEmpty(event.getMessage().getContent())
+                .doOnNext(command -> audioManager.getAudioPlayer().setPaused(true)).then());
+        commands.put("unpause", event -> Mono.justOrEmpty(event.getMessage().getContent())
+                .doOnNext(command -> audioManager.getAudioPlayer().setPaused(false)).then());
+        commands.put("quit", event -> Mono.justOrEmpty(event.getMember())
+                .flatMap(Member::getVoiceState)
+                .flatMap(VoiceState::getChannel)
+                .flatMap(VoiceChannel::sendDisconnectVoiceState)
                 .then());
     }
 
