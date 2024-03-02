@@ -3,10 +3,6 @@ package org.eu.polarexpress.conductor.discord;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.VoiceState;
-import discord4j.core.object.entity.Member;
-import discord4j.core.object.entity.channel.VoiceChannel;
-import discord4j.core.spec.VoiceChannelJoinSpec;
 import lombok.Getter;
 import org.eu.polarexpress.conductor.discord.command.Command;
 import org.slf4j.Logger;
@@ -19,16 +15,21 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.*;
+import java.util.function.Function;
 
 @Component
 public class DiscordBot {
     @Value("${discord.token}")
     private String token;
-    private final Map<String, Command> commands;
+    private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands;
     @Getter
     private final AudioManager audioManager;
     @Getter
@@ -59,54 +60,113 @@ public class DiscordBot {
                             .flatMap(content -> Flux.fromIterable(commands.entrySet())
                                     // We will be using ! as our "prefix" to any command in the system.
                                     .filter(entry -> content.startsWith("=!" + entry.getKey()))
-                                    .flatMap(entry -> entry.getValue().execute(event))
+                                    .flatMap(entry -> entry.getValue().apply(event))
                                     .next()))
                     .subscribe();
             client.onDisconnect().block();
         }
     }
 
-    private void initCommands() {
-        commands.put("ping", event -> event.getMessage().getChannel()
-                .flatMap(channel -> channel.createMessage("Pong!"))
-                .then());
-        commands.put("join", event -> Mono.justOrEmpty(event.getMember())
-                .flatMap(Member::getVoiceState)
-                .flatMap(VoiceState::getChannel)
-                .flatMap(channel -> channel.join(VoiceChannelJoinSpec.builder()
-                        .provider(audioManager.getProvider())
-                        .build()))
-                .then());
-        TrackScheduler scheduler = new TrackScheduler(audioManager.getAudioPlayer());
-        commands.put("play", event -> Mono.justOrEmpty(event.getMessage().getContent())
-                .map(content -> Arrays.asList(content.split(" ")))
-                .doOnNext(command ->
-                        audioManager.getPlayerManager().loadItem(command.get(1), scheduler))
-                .then());
-        commands.put("volume", event -> Mono.justOrEmpty(event.getMessage().getContent())
-                .map(content -> Arrays.asList(content.split(" ")))
-                .filter(args -> args.size() > 1 && args.get(1).matches("\\d+"))
-                .doOnNext(command ->
-                        audioManager.getAudioPlayer().setVolume(Integer.parseInt(command.get(1))))
-                .then());
-        commands.put("timeframe", event -> Mono.justOrEmpty(event.getMessage().getContent())
-                .map(content -> Arrays.asList(content.split(" ")))
-                .filter(args -> args.size() > 1 && args.get(1).matches("\\d+"))
-                .doOnNext(command ->
-                        audioManager.getAudioPlayer().getPlayingTrack().setPosition(Long.parseLong(command.get(1))))
-                .then());
-        commands.put("pause", event -> Mono.justOrEmpty(event.getMessage().getContent())
-                .doOnNext(command -> audioManager.getAudioPlayer().setPaused(true)).then());
-        commands.put("unpause", event -> Mono.justOrEmpty(event.getMessage().getContent())
-                .doOnNext(command -> audioManager.getAudioPlayer().setPaused(false)).then());
-        commands.put("quit", event -> Mono.justOrEmpty(event.getMember())
-                .flatMap(Member::getVoiceState)
-                .flatMap(VoiceState::getChannel)
-                .flatMap(VoiceChannel::sendDisconnectVoiceState)
-                .then());
+    public Map<String, Function<MessageCreateEvent, Mono<Void>>> getCommands() {
+        return Collections.unmodifiableMap(commands);
     }
 
-    public Map<String, Command> getCommands() {
-        return Collections.unmodifiableMap(commands);
+    private void initCommands() {
+        var classes = getClasses("org.eu.polarexpress.conductor.discord.command");
+
+        for (Class<?> clazz : classes) {
+            for (Method method : clazz.getMethods()) {
+                if (method.isAnnotationPresent(Command.class)) {
+                    var commandName = method.getAnnotation(Command.class).command();
+                    commands.put(commandName, event -> {
+                        try {
+                            var access = method.canAccess(null);
+                            if (!access) {
+                                method.setAccessible(true);
+                            }
+                            var result = method.invoke(null, this, event);
+                            if (!access) {
+                                method.setAccessible(false);
+                            }
+                            return result instanceof Mono ? (Mono<Void>) result : Mono.empty();
+                        } catch (IllegalAccessException | InvocationTargetException exception) {
+                            logger.error(exception.getMessage());
+                        }
+                        return Mono.empty();
+                    });
+                    logger.info("Registered command {}!", commandName);
+                }
+            }
+        }
+    }
+
+    /**
+     * Scans all classes accessible from the context class loader which belong
+     * to the given package and subpackages.
+     *
+     * @param packageName
+     *            The base package
+     * @return The classes
+     * @throws ClassNotFoundException
+     * @throws IOException
+     */
+    private List<Class<?>> getClasses(String packageName) {
+        try {
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            String path = packageName.replace('.', '/');
+            Enumeration<URL> resources = classLoader.getResources(path);
+            List<File> dirs = new ArrayList<File>();
+            while (resources.hasMoreElements())
+            {
+                URL resource = resources.nextElement();
+                URI uri = new URI(resource.toString());
+                dirs.add(new File(uri.getPath()));
+            }
+            List<Class<?>> classes = new ArrayList<>();
+            for (File directory : dirs)
+            {
+                classes.addAll(findClasses(directory, packageName));
+            }
+            return classes;
+        } catch (ClassNotFoundException | IOException | URISyntaxException exception) {
+            logger.error(exception.getMessage());
+        }
+        return List.of();
+    }
+
+    /**
+     * Recursive method used to find all classes in a given directory and
+     * subdirs.
+     *
+     * @param directory
+     *            The base directory
+     * @param packageName
+     *            The package name for classes found inside the base directory
+     * @return The classes
+     * @throws ClassNotFoundException
+     */
+    private List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException
+    {
+        List<Class<?>> classes = new ArrayList<>();
+        if (!directory.exists())
+        {
+            return classes;
+        }
+        File[] files = directory.listFiles();
+        if (files == null) {
+            return List.of();
+        }
+        for (File file : files)
+        {
+            if (file.isDirectory())
+            {
+                classes.addAll(findClasses(file, packageName + "." + file.getName()));
+            }
+            else if (file.getName().endsWith(".class"))
+            {
+                classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+            }
+        }
+        return classes;
     }
 }
