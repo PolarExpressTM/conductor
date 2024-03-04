@@ -27,6 +27,8 @@ import java.util.function.Function;
 
 @Component
 public class DiscordBot {
+    @Value("${discord.prefix}")
+    private String prefix;
     @Value("${discord.token}")
     private String token;
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands;
@@ -58,8 +60,7 @@ public class DiscordBot {
             client.getEventDispatcher().on(MessageCreateEvent.class)
                     .flatMap(event -> Mono.just(event.getMessage().getContent())
                             .flatMap(content -> Flux.fromIterable(commands.entrySet())
-                                    // We will be using ! as our "prefix" to any command in the system.
-                                    .filter(entry -> content.startsWith("=!" + entry.getKey()))
+                                    .filter(entry -> content.startsWith(prefix + entry.getKey()))
                                     .flatMap(entry -> entry.getValue().apply(event))
                                     .next()))
                     .subscribe();
@@ -107,8 +108,6 @@ public class DiscordBot {
      * @param packageName
      *            The base package
      * @return The classes
-     * @throws ClassNotFoundException
-     * @throws IOException
      */
     private List<Class<?>> getClasses(String packageName) {
         try {
@@ -136,14 +135,13 @@ public class DiscordBot {
 
     /**
      * Recursive method used to find all classes in a given directory and
-     * subdirs.
+     * sub dirs.
      *
      * @param directory
      *            The base directory
      * @param packageName
      *            The package name for classes found inside the base directory
      * @return The classes
-     * @throws ClassNotFoundException
      */
     private List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException
     {
