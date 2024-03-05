@@ -8,4 +8,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class DiscordConfig {
     private String prefix;
     private String token;
+    private String deepl;
 }
