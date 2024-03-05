@@ -1,13 +1,15 @@
 package org.eu.polarexpress.conductor;
 
 import org.eu.polarexpress.conductor.config.DiscordConfig;
+import org.eu.polarexpress.conductor.config.PixivConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
 @EnableConfigurationProperties({
-        DiscordConfig.class
+        DiscordConfig.class,
+        PixivConfig.class
 })
 public class ConductorApplication {
 

@@ -1,8 +1,7 @@
 discord.prefix==!
 discord.token=
 discord.deepl=
-pixiv.user=
-pixiv.pass=
+pixiv.session=
 
 server.port=7790
 
