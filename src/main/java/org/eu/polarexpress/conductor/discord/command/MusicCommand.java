@@ -29,6 +29,7 @@ public class MusicCommand {
         TrackScheduler scheduler = new TrackScheduler(bot.getAudioManager().getAudioPlayer());
         return Mono.justOrEmpty(event.getMessage().getContent())
                 .map(content -> Arrays.asList(content.split(" ")))
+                .filter(args -> args.size() > 1)
                 .doOnNext(command ->
                         bot.getAudioManager().getPlayerManager().loadItem(command.get(1), scheduler))
                 .then();

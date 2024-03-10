@@ -3,8 +3,11 @@ package org.eu.polarexpress.conductor.discord;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.eu.polarexpress.conductor.discord.command.Command;
+import org.eu.polarexpress.conductor.discord.pixiv.PixivHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,24 +29,22 @@ import java.util.*;
 import java.util.function.Function;
 
 @Component
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED, onConstructor_ = @Autowired)
 public class DiscordBot {
+    private static final String REGEX_PIXIV = "https?:\\/\\/(www\\.)?pixiv\\.net\\/.*artworks\\/(?<id>\\d+)\\/?";
     @Value("${discord.prefix}")
     private String prefix;
     @Value("${discord.token}")
     private String token;
-    private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands;
+    private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
     @Getter
     private final AudioManager audioManager;
+    @Getter
+    private final PixivHandler pixivHandler;
     @Getter
     private GatewayDiscordClient client;
     @Getter
     private final Logger logger = LoggerFactory.getLogger(DiscordBot.class);
-
-    @Autowired
-    public DiscordBot(AudioManager audioManager) {
-        commands = new HashMap<>();
-        this.audioManager = audioManager;
-    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void startDiscordBot() {
@@ -59,6 +60,13 @@ public class DiscordBot {
         if (client != null) {
             client.getEventDispatcher().on(MessageCreateEvent.class)
                     .flatMap(event -> Mono.just(event.getMessage().getContent())
+                            .map(string -> {
+                                if (string.matches(REGEX_PIXIV)) {
+                                    pixivHandler.uploadIllustration(this, event);
+                                }
+                                return string;
+                            })
+                            .filter(string -> !string.matches(REGEX_PIXIV))
                             .flatMap(content -> Flux.fromIterable(commands.entrySet())
                                     .filter(entry -> content.startsWith(prefix + entry.getKey()))
                                     .flatMap(entry -> entry.getValue().apply(event))
