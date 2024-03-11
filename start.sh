@@ -1,1 +1,1 @@
-./mvnw spring-boot:run
+java -jar target/conductor-1.0.jar

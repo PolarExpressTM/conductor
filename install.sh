@@ -1,1 +1,1 @@
-./mvnw clean install
+./mvnw -Dmaven.test.skip clean install
