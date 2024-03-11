@@ -1,5 +1,7 @@
 package org.eu.polarexpress.conductor.dto;
 
+import java.util.List;
+
 public record IllustrationDetailsResponse(
         boolean error,
         String message,
@@ -13,7 +15,6 @@ public record IllustrationDetailsResponse(
             IllustrationDetailsUrls urls,
             int pageCount
     ) {
-
     }
     public record IllustrationDetailsUrls(
             String mini,
@@ -22,8 +23,10 @@ public record IllustrationDetailsResponse(
             String regular,
             String original
     ) {
+        public List<String> getAllUrls() {
+            return List.of(original, regular, small, thumb, mini);
+        }
     }
-
     public enum IllustrationType {
         ILLUSTRATION,
         UNKNOWN,

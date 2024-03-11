@@ -8,7 +8,6 @@ public class PingCommand {
 
     @Command(command = "ping")
     public static Mono<Void> ping(DiscordBot bot, MessageCreateEvent event) {
-        bot.getPixivHandler().getIllustration("116811391");
         return event.getMessage().getChannel()
                 .flatMap(channel -> channel.createMessage("Pong!"))
                 .then();

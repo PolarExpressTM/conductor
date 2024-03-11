@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.eu.polarexpress.conductor.discord.command.Command;
+import org.eu.polarexpress.conductor.discord.detector.Detector;
 import org.eu.polarexpress.conductor.discord.pixiv.PixivHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,17 +27,18 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED, onConstructor_ = @Autowired)
 public class DiscordBot {
-    private static final String REGEX_PIXIV = "https?:\\/\\/(www\\.)?pixiv\\.net\\/.*artworks\\/(?<id>\\d+)\\/?";
     @Value("${discord.prefix}")
     private String prefix;
     @Value("${discord.token}")
     private String token;
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
+    private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
     @Getter
     private final AudioManager audioManager;
     @Getter
@@ -50,8 +52,10 @@ public class DiscordBot {
     public void startDiscordBot() {
         logger.info("Initiating Pixiv cookie...");
         pixivHandler.initCookie();
-        logger.info("Connecting bot...");
+        logger.info("Initiating commands and detectors...");
         initCommands();
+        initDetectors();
+        logger.info("Connecting bot...");
         connect();
     }
 
@@ -63,12 +67,11 @@ public class DiscordBot {
             client.getEventDispatcher().on(MessageCreateEvent.class)
                     .flatMap(event -> Mono.just(event.getMessage().getContent())
                             .map(string -> {
-                                if (string.matches(REGEX_PIXIV)) {
-                                    //pixivHandler.uploadIllustration(this, event);
-                                }
+                                detectors.entrySet().stream()
+                                        .filter(entry -> string.matches(entry.getKey()))
+                                        .forEach(entry -> entry.getValue().accept(event));
                                 return string;
                             })
-                            .filter(string -> !string.matches(REGEX_PIXIV))
                             .flatMap(content -> Flux.fromIterable(commands.entrySet())
                                     .filter(entry -> content.startsWith(prefix + entry.getKey()))
                                     .flatMap(entry -> entry.getValue().apply(event))
@@ -78,17 +81,19 @@ public class DiscordBot {
         }
     }
 
-    public Map<String, Function<MessageCreateEvent, Mono<Void>>> getCommands() {
-        return Collections.unmodifiableMap(commands);
-    }
-
     private void initCommands() {
         var classes = getClasses("org.eu.polarexpress.conductor.discord.command");
-
         for (Class<?> clazz : classes) {
             for (Method method : clazz.getMethods()) {
                 if (method.isAnnotationPresent(Command.class)) {
                     var commandName = method.getAnnotation(Command.class).command();
+                    if (method.getReturnType() != Mono.class ||
+                            method.getParameterCount() != 2 ||
+                            method.getParameterTypes()[0] != DiscordBot.class ||
+                            method.getParameterTypes()[1] != MessageCreateEvent.class) {
+                        logger.error("Command \"{}\" has invalid return or parameter types!", commandName);
+                        continue;
+                    }
                     commands.put(commandName, event -> {
                         try {
                             var access = method.canAccess(null);
@@ -111,6 +116,38 @@ public class DiscordBot {
         }
     }
 
+    private void initDetectors() {
+        var classes = getClasses("org.eu.polarexpress.conductor.discord.detector");
+        for (Class<?> clazz : classes) {
+            for (Method method : clazz.getMethods()) {
+                if (method.isAnnotationPresent(Detector.class)) {
+                    var regex = method.getAnnotation(Detector.class).regex();
+                    if (method.getParameterCount() != 2 ||
+                            method.getParameterTypes()[0] != DiscordBot.class ||
+                            method.getParameterTypes()[1] != MessageCreateEvent.class) {
+                        logger.error("Detector with regex \"{}\" has invalid return or parameter types!", regex);
+                        continue;
+                    }
+                    detectors.put(regex, event -> {
+                        try {
+                            var access = method.canAccess(null);
+                            if (!access) {
+                                method.setAccessible(true);
+                            }
+                            method.invoke(null, this, event);
+                            if (!access) {
+                                method.setAccessible(false);
+                            }
+                        } catch (IllegalAccessException | InvocationTargetException exception) {
+                            logger.error(exception.getMessage());
+                        }
+                    });
+                    logger.info("Registered detector {}!", regex);
+                }
+            }
+        }
+    }
+
     /**
      * Scans all classes accessible from the context class loader which belong
      * to the given package and subpackages.
@@ -124,7 +161,7 @@ public class DiscordBot {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             String path = packageName.replace('.', '/');
             Enumeration<URL> resources = classLoader.getResources(path);
-            List<File> dirs = new ArrayList<File>();
+            List<File> dirs = new ArrayList<>();
             while (resources.hasMoreElements())
             {
                 URL resource = resources.nextElement();
