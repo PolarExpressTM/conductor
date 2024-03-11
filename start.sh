@@ -1,1 +1,1 @@
-./mvnw spring-boot:run
+./mvnw -Dmaven.test.skip spring-boot:run
