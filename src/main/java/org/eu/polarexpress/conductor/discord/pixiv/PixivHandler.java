@@ -1,7 +1,6 @@
 package org.eu.polarexpress.conductor.discord.pixiv;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.spec.MessageCreateSpec;
@@ -17,8 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.io.*;
-import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.util.concurrent.ExecutionException;
 

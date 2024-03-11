@@ -48,6 +48,8 @@ public class DiscordBot {
 
     @EventListener(ApplicationReadyEvent.class)
     public void startDiscordBot() {
+        logger.info("Initiating Pixiv cookie...");
+        pixivHandler.initCookie();
         logger.info("Connecting bot...");
         initCommands();
         connect();
@@ -62,7 +64,7 @@ public class DiscordBot {
                     .flatMap(event -> Mono.just(event.getMessage().getContent())
                             .map(string -> {
                                 if (string.matches(REGEX_PIXIV)) {
-                                    pixivHandler.uploadIllustration(this, event);
+                                    //pixivHandler.uploadIllustration(this, event);
                                 }
                                 return string;
                             })
