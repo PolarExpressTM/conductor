@@ -1,7 +1,9 @@
 discord.prefix==!
 discord.token=
 discord.deepl=
+discord.user-agent=Discord Bot (https://github.com/PolarExpressTM/conductor)
 pixiv.session=
+pixiv.max-pages=5
 util.user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
 
 server.port=7790
@@ -10,9 +12,22 @@ spring.servlet.multipart.max-file-size=5000MB
 server.servlet.session.cookie.secure=true
 spring.devtools.restart.additional-paths=templates/**,static/**
 
-spring.datasource.url=jdbc:h2:file:conductor
+spring.datasource.url=jdbc:h2:file:./conductor
 spring.datasource.username=
 spring.datasource.password=
 spring.jpa.generate-ddl=true
 #spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
+server.forward-headers-strategy=FRAMEWORK
+
+spring.security.oauth2.client.registration.discord.client-name=
+spring.security.oauth2.client.registration.discord.client-id=
+spring.security.oauth2.client.registration.discord.client-secret=
+spring.security.oauth2.client.registration.discord.redirect-uri=
+spring.security.oauth2.client.registration.discord.scope[0]=identify
+spring.security.oauth2.client.registration.discord.client-authentication-method=client_secret_post
+spring.security.oauth2.client.registration.discord.authorization-grant-type=authorization_code
+spring.security.oauth2.client.provider.discord.authorization-uri=https://discordapp.com/api/oauth2/authorize
+spring.security.oauth2.client.provider.discord.token-uri=https://discordapp.com/api/oauth2/token
+spring.security.oauth2.client.provider.discord.user-info-uri=https://discordapp.com/api/users/@me
+spring.security.oauth2.client.provider.discord.user-name-attribute=username
