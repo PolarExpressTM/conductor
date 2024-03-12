@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <title>Conductor</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-md d-print-none bg-conductor" th:fragment="header">
+    <div class="container-fluid">
+        <button class="navbar-toggler collapsed"
+                data-bs-target="#navigation-bar"
+                data-bs-toggle="collapse"
+                type="button">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-brand pe-0 pe-md-3">
+            <a th:href="@{/}">
+                <img th:src="@{/assets/public/conductor.png}" alt="conductor" width="50">
+            </a>
+        </div>
+        <div class="collapse navbar-collapse" id="navigation-bar">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item dropdown" id="dropdown-persons">
+                    <a class="nav-link dropdown-toggle dropdown-toggle-2"
+                       data-bs-toggle="dropdown"
+                       data-bs-auto-close="outside"
+                       role="button">
+                        <span class="nav-link-title text-main fix-dropdown-symbol">Manage Server</span>
+                    </a>
+                    <div class="dropdown-menu bg-conductor">
+                        <a class="nav-link" th:href="@{/manage/id}">
+                            <span class="text-main">PolarExpress</span>
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <form class="d-flex" method="post" th:action="@{/logout}">
+                        <button class="btn btn-conductor mx-1 text-main" type="submit">Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+</body>
+</html>

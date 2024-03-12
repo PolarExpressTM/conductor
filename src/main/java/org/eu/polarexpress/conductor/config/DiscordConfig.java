@@ -9,4 +9,5 @@ public class DiscordConfig {
     private String prefix;
     private String token;
     private String deepl;
+    private String userAgent;
 }

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link rel="stylesheet" th:href="@{/css/tabler.min.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <title>Conductor</title>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<p th:text="${'Welcome back, ' + (user != null ? user.get().getGlobalName() : '') + '!'}"></p>
+<script th:src="@{/js/tabler.min.js}"></script>
+</body>
+</html>
