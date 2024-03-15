@@ -2,12 +2,15 @@ package org.eu.polarexpress.conductor.discord;
 
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.Event;
+import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.eu.polarexpress.conductor.discord.command.Command;
 import org.eu.polarexpress.conductor.discord.detector.Detector;
+import org.eu.polarexpress.conductor.discord.event.Listener;
 import org.eu.polarexpress.conductor.discord.pixiv.PixivHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -38,11 +42,14 @@ public class DiscordBot {
     @Value("${discord.token}")
     private String token;
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
+    private final Map<Event, Function<Event, Mono<Void>>> listeners = new HashMap<>();
     private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
     @Getter
     private final AudioManager audioManager;
     @Getter
     private final PixivHandler pixivHandler;
+    @Getter
+    private final DiscordModelHandler discordModelHandler;
     @Getter
     private GatewayDiscordClient client;
     @Getter
@@ -52,8 +59,11 @@ public class DiscordBot {
     public void startDiscordBot() {
         logger.info("Initiating Pixiv cookie...");
         pixivHandler.initCookie();
-        logger.info("Initiating commands and detectors...");
+        logger.info("Initiating commands...");
         initCommands();
+        logger.info("Initiating listeners...");
+        initListeners();
+        logger.info("Initiating detectors...");
         initDetectors();
         logger.info("Connecting bot...");
         connect();
@@ -64,6 +74,13 @@ public class DiscordBot {
                 .login()
                 .block();
         if (client != null) {
+            client.getGuilds()
+                    .map(guild -> guild)
+                    .subscribe();
+            client.getEventDispatcher().on(GuildCreateEvent.class)
+                    .flatMap(event -> Mono.just(event)
+                            .flatMap(ev -> listeners.get(ev).apply(ev)))
+                    .subscribe();
             client.getEventDispatcher().on(MessageCreateEvent.class)
                     .flatMap(event -> Mono.just(event.getMessage().getContent())
                             .map(string -> {
@@ -82,67 +99,91 @@ public class DiscordBot {
     }
 
     private void initCommands() {
-        var classes = getClasses("org.eu.polarexpress.conductor.discord.command");
-        for (Class<?> clazz : classes) {
-            for (Method method : clazz.getMethods()) {
-                if (method.isAnnotationPresent(Command.class)) {
-                    var commandName = method.getAnnotation(Command.class).command();
-                    if (method.getReturnType() != Mono.class ||
-                            method.getParameterCount() != 2 ||
-                            method.getParameterTypes()[0] != DiscordBot.class ||
-                            method.getParameterTypes()[1] != MessageCreateEvent.class) {
-                        logger.error("Command \"{}\" has invalid return or parameter types!", commandName);
-                        continue;
-                    }
-                    commands.put(commandName, event -> {
-                        try {
-                            var access = method.canAccess(null);
-                            if (!access) {
-                                method.setAccessible(true);
-                            }
-                            var result = method.invoke(null, this, event);
-                            if (!access) {
-                                method.setAccessible(false);
-                            }
-                            return result instanceof Mono ? (Mono<Void>) result : Mono.empty();
-                        } catch (IllegalAccessException | InvocationTargetException exception) {
-                            logger.error(exception.getMessage());
-                        }
-                        return Mono.empty();
-                    });
-                    logger.info("Registered command {}!", commandName);
-                }
+        scanAnnotations("org.eu.polarexpress.conductor.discord.command", Command.class, method -> {
+            var commandName = method.getAnnotation(Command.class).command();
+            if (method.getReturnType() != Mono.class ||
+                    method.getParameterCount() != 2 ||
+                    method.getParameterTypes()[0] != DiscordBot.class ||
+                    method.getParameterTypes()[1] != MessageCreateEvent.class) {
+                logger.error("Command \"{}\" has invalid return or parameter types!", commandName);
+                return;
             }
-        }
+            commands.put(commandName, event -> invokeMethod(method, event));
+            logger.info("Registered command \"{}\"!", commandName);
+        });
+    }
+
+    private void initListeners() {
+        scanAnnotations("org.eu.polarexpress.conductor.discord.event", Listener.class, method -> {
+            var eventClass = method.getAnnotation(Listener.class).event();
+            if (!eventClass.isInstance(Event.class)) {
+                logger.error("Listener for \"{}\" has a class that can not be casted to an Event",
+                        eventClass.getName());
+            }
+            if (method.getReturnType() != Mono.class ||
+                    method.getParameterCount() != 2 ||
+                    method.getParameterTypes()[0] != DiscordBot.class ||
+                    method.getParameterTypes()[1] != MessageCreateEvent.class) {
+                logger.error("Listener for \"{}\" has invalid return or parameter types!", eventClass.getName());
+                return;
+            }
+            listeners.put(eventClass.cast(Event.class), event -> invokeMethod(method, event));
+            logger.info("Registered listener for \"{}\"!", eventClass.getName());
+        });
     }
 
     private void initDetectors() {
-        var classes = getClasses("org.eu.polarexpress.conductor.discord.detector");
+        scanAnnotations("org.eu.polarexpress.conductor.discord.detector", Detector.class, method -> {
+            var regex = method.getAnnotation(Detector.class).regex();
+            if (method.getParameterCount() != 2 ||
+                    method.getParameterTypes()[0] != DiscordBot.class ||
+                    method.getParameterTypes()[1] != MessageCreateEvent.class) {
+                logger.error("Detector with regex \"{}\" has invalid return or parameter types!", regex);
+                return;
+            }
+            detectors.put(regex, event -> {
+                try {
+                    var access = method.canAccess(null);
+                    if (!access) {
+                        method.setAccessible(true);
+                    }
+                    method.invoke(null, this, event);
+                    if (!access) {
+                        method.setAccessible(false);
+                    }
+                } catch (IllegalAccessException | InvocationTargetException exception) {
+                    logger.error(exception.getMessage());
+                }
+            });
+            logger.info("Registered detector \"{}\"!", regex);
+        });
+    }
+
+    private Mono<Void> invokeMethod(Method method, Event event) {
+        try {
+            var access = method.canAccess(null);
+            if (!access) {
+                method.setAccessible(true);
+            }
+            var result = method.invoke(null, this, event);
+            if (!access) {
+                method.setAccessible(false);
+            }
+            return result instanceof Mono ? (Mono<Void>) result : Mono.empty();
+        } catch (IllegalAccessException | InvocationTargetException exception) {
+            logger.error(exception.getMessage());
+        }
+        return Mono.empty();
+    }
+
+    private void scanAnnotations(String packageName,
+                                 Class<? extends Annotation> annotation,
+                                 Consumer<Method> callback) {
+        var classes = getClasses(packageName);
         for (Class<?> clazz : classes) {
             for (Method method : clazz.getMethods()) {
-                if (method.isAnnotationPresent(Detector.class)) {
-                    var regex = method.getAnnotation(Detector.class).regex();
-                    if (method.getParameterCount() != 2 ||
-                            method.getParameterTypes()[0] != DiscordBot.class ||
-                            method.getParameterTypes()[1] != MessageCreateEvent.class) {
-                        logger.error("Detector with regex \"{}\" has invalid return or parameter types!", regex);
-                        continue;
-                    }
-                    detectors.put(regex, event -> {
-                        try {
-                            var access = method.canAccess(null);
-                            if (!access) {
-                                method.setAccessible(true);
-                            }
-                            method.invoke(null, this, event);
-                            if (!access) {
-                                method.setAccessible(false);
-                            }
-                        } catch (IllegalAccessException | InvocationTargetException exception) {
-                            logger.error(exception.getMessage());
-                        }
-                    });
-                    logger.info("Registered detector {}!", regex);
+                if (method.isAnnotationPresent(annotation)) {
+                    callback.accept(method);
                 }
             }
         }

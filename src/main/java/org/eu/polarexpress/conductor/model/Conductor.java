@@ -5,7 +5,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -30,16 +30,16 @@ import java.util.Map;
 @Getter
 @SuperBuilder
 public class Conductor extends BaseEntity implements UserDetails, OAuth2User, OidcUser {
-    @NotEmpty
+    @NotBlank
     @Setter
     private String snowflakeId;
-    @NotEmpty
+    @NotBlank
     @Setter
     private String username;
-    @NotEmpty
+    @NotBlank
     @Setter
     private String globalName;
-    @NotEmpty
+    @NotBlank
     @Setter
     private String locale;
     @Email
