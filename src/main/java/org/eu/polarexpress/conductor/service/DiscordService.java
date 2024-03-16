@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @Transactional
@@ -17,9 +17,14 @@ import java.util.Optional;
 public class DiscordService {
     private final ServerRepository serverRepository;
 
-    public Optional<Server> save(Guild guild) {
+    public List<Server> findAllServers() {
+        return serverRepository.findAll();
+    }
 
-        return Optional.empty();
+    public Server save(Guild guild) {
+        return serverRepository.findBySnowflakeId(guild.getId().asString())
+                .map(server -> server.merge(guild))
+                .orElseGet(() -> serverRepository.save(Server.fromGuild(guild)));
     }
 
 }

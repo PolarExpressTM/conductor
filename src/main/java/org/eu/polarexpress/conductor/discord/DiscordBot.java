@@ -12,6 +12,7 @@ import org.eu.polarexpress.conductor.discord.command.Command;
 import org.eu.polarexpress.conductor.discord.detector.Detector;
 import org.eu.polarexpress.conductor.discord.event.Listener;
 import org.eu.polarexpress.conductor.discord.pixiv.PixivHandler;
+import org.eu.polarexpress.conductor.service.DiscordService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,14 +44,14 @@ public class DiscordBot {
     @Value("${discord.token}")
     private String token;
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
-    private final Map<Event, Function<Event, Mono<Void>>> listeners = new HashMap<>();
+    private final Map<String, Function<Event, Mono<Void>>> listeners = new HashMap<>();
     private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
     @Getter
     private final AudioManager audioManager;
     @Getter
     private final PixivHandler pixivHandler;
     @Getter
-    private final DiscordModelHandler discordModelHandler;
+    private final DiscordService discordService;
     @Getter
     private GatewayDiscordClient client;
     @Getter
@@ -75,11 +77,18 @@ public class DiscordBot {
                 .block();
         if (client != null) {
             client.getGuilds()
-                    .map(guild -> guild)
+                    .publishOn(Schedulers.boundedElastic())
+                    .map(guild -> {
+                        logger.info("Guild: {}\t{}\t{}",
+                                guild.getId().asString(), guild.getName(),  guild.getMemberCount());
+                        discordService.save(guild);
+                        return guild;
+                    })
                     .subscribe();
             client.getEventDispatcher().on(GuildCreateEvent.class)
                     .flatMap(event -> Mono.just(event)
-                            .flatMap(ev -> listeners.get(ev).apply(ev)))
+                            .filter(ev -> listeners.containsKey(ev.getClass().getName()))
+                            .flatMap(ev -> listeners.get(ev.getClass().getName()).apply(ev)))
                     .subscribe();
             client.getEventDispatcher().on(MessageCreateEvent.class)
                     .flatMap(event -> Mono.just(event.getMessage().getContent())
@@ -116,18 +125,14 @@ public class DiscordBot {
     private void initListeners() {
         scanAnnotations("org.eu.polarexpress.conductor.discord.event", Listener.class, method -> {
             var eventClass = method.getAnnotation(Listener.class).event();
-            if (!eventClass.isInstance(Event.class)) {
-                logger.error("Listener for \"{}\" has a class that can not be casted to an Event",
-                        eventClass.getName());
-            }
             if (method.getReturnType() != Mono.class ||
                     method.getParameterCount() != 2 ||
                     method.getParameterTypes()[0] != DiscordBot.class ||
-                    method.getParameterTypes()[1] != MessageCreateEvent.class) {
+                    method.getParameterTypes()[1] != Event.class) {
                 logger.error("Listener for \"{}\" has invalid return or parameter types!", eventClass.getName());
                 return;
             }
-            listeners.put(eventClass.cast(Event.class), event -> invokeMethod(method, event));
+            listeners.put(eventClass.getName(), event -> invokeMethod(method, event));
             logger.info("Registered listener for \"{}\"!", eventClass.getName());
         });
     }

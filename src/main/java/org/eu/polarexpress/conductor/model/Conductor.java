@@ -29,6 +29,7 @@ import java.util.Map;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @SuperBuilder
+@EqualsAndHashCode(callSuper = false)
 public class Conductor extends BaseEntity implements UserDetails, OAuth2User, OidcUser {
     @NotBlank
     @Setter
