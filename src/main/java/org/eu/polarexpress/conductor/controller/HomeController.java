@@ -2,6 +2,8 @@ package org.eu.polarexpress.conductor.controller;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import org.eu.polarexpress.conductor.discord.handler.TranslationHandler;
+import org.eu.polarexpress.conductor.service.DiscordService;
 import org.eu.polarexpress.conductor.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,6 +16,8 @@ import static org.eu.polarexpress.conductor.util.ContextUtils.getCurrentUser;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED, onConstructor_ = @Autowired)
 public class HomeController {
     private final UserService userService;
+    private final DiscordService discordService;
+    private final TranslationHandler translationHandler;
 
     @GetMapping
     public ModelAndView home() {
@@ -21,8 +25,12 @@ public class HomeController {
         if (user.isEmpty()) {
             return new ModelAndView("login");
         }
+        var servers = discordService.findAllServers();
+        var usageData = translationHandler.fetchUsageData();
         var view = new ModelAndView("home");
         view.addObject("user", user);
+        view.addObject("servers", servers);
+        view.addObject("usageData", usageData);
         return view;
     }
 

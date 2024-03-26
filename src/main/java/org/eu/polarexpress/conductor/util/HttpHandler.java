@@ -63,13 +63,14 @@ public class HttpHandler {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    public CompletableFuture<HttpResponse<String>> getJson(String uri) {
+    public CompletableFuture<HttpResponse<String>> getJson(String uri, String... headers) {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri))
                 .header("User-Agent", userAgent)
                 .header("Accept", "application/json")
                 .header("Referer", "https://pixiv.net/")
+                .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }

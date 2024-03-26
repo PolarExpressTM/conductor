@@ -11,6 +11,12 @@
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 <p th:text="${'Welcome back, ' + (user != null ? user.get().getGlobalName() : '') + '!'}"></p>
+
+<div class="container-fluid">
+    <p>DeepL Usage: </p>
+    <p th:text="${usageData}"></p>
+</div>
+
 <script th:src="@{/js/tabler.min.js}"></script>
 </body>
 </html>

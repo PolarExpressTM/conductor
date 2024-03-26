@@ -5,13 +5,17 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.event.domain.message.ReactionAddEvent;
+import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.eu.polarexpress.conductor.discord.command.Command;
 import org.eu.polarexpress.conductor.discord.detector.Detector;
 import org.eu.polarexpress.conductor.discord.event.Listener;
-import org.eu.polarexpress.conductor.discord.pixiv.PixivHandler;
+import org.eu.polarexpress.conductor.discord.event.ReactionListener;
+import org.eu.polarexpress.conductor.discord.handler.PixivHandler;
+import org.eu.polarexpress.conductor.discord.handler.TranslationHandler;
 import org.eu.polarexpress.conductor.service.DiscordService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +55,8 @@ public class DiscordBot {
     @Getter
     private final PixivHandler pixivHandler;
     @Getter
+    private final TranslationHandler translationHandler;
+    @Getter
     private final DiscordService discordService;
     @Getter
     private GatewayDiscordClient client;
@@ -59,8 +65,9 @@ public class DiscordBot {
 
     @EventListener(ApplicationReadyEvent.class)
     public void startDiscordBot() {
-        logger.info("Initiating Pixiv cookie...");
+        logger.info("Initiating handlers...");
         pixivHandler.initCookie();
+        translationHandler.initTranslator();
         logger.info("Initiating commands...");
         initCommands();
         logger.info("Initiating listeners...");
@@ -80,7 +87,7 @@ public class DiscordBot {
                     .publishOn(Schedulers.boundedElastic())
                     .map(guild -> {
                         logger.info("Guild: {}\t{}\t{}",
-                                guild.getId().asString(), guild.getName(),  guild.getMemberCount());
+                                guild.getId().asString(), guild.getName(), guild.getMemberCount());
                         discordService.save(guild);
                         return guild;
                     })
@@ -102,6 +109,16 @@ public class DiscordBot {
                                     .filter(entry -> content.startsWith(prefix + entry.getKey()))
                                     .flatMap(entry -> entry.getValue().apply(event))
                                     .next()))
+                    .subscribe();
+            client.getEventDispatcher().on(ReactionAddEvent.class)
+                    .flatMap(event -> Mono.just(event)
+                            .filter(ev -> listeners.containsKey(ev.getEmoji().asUnicodeEmoji()
+                                    .map(ReactionEmoji.Unicode::getRaw)
+                                    .orElse(null)))
+                            .flatMap(ev -> listeners.get(ev.getEmoji().asUnicodeEmoji()
+                                            .map(ReactionEmoji.Unicode::getRaw)
+                                            .orElse(null))
+                                    .apply(ev)))
                     .subscribe();
             client.onDisconnect().block();
         }
@@ -134,6 +151,19 @@ public class DiscordBot {
             }
             listeners.put(eventClass.getName(), event -> invokeMethod(method, event));
             logger.info("Registered listener for \"{}\"!", eventClass.getName());
+        });
+        scanAnnotations("org.eu.polarexpress.conductor.discord.event", ReactionListener.class, method -> {
+            var emoji = method.getAnnotation(ReactionListener.class).emoji();
+            if (method.getReturnType() != Mono.class ||
+                    method.getParameterCount() != 2 ||
+                    method.getParameterTypes()[0] != DiscordBot.class ||
+                    method.getParameterTypes()[1] != Event.class) {
+                logger.error("ReactionListener for emoji \"{}\" has invalid return or parameter types!",
+                        emoji);
+                return;
+            }
+            listeners.put(emoji, event -> invokeMethod(method, event));
+            logger.info("Registered listener for emoji \"{}\"!", emoji);
         });
     }
 
