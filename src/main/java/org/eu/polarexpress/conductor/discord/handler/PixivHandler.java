@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED, onConstructor_ = @Autowired)
 public class PixivHandler {
     private static final long MAX_SIZE = 24_117_248;
-    private static final String BASE_URL = "https://www.pixiv.net";
+    private static final String BASE_URL = "https://www.pixiv.net/";
     private static final String API_URL = "https://www.pixiv.net/ajax";
 
     private final Logger logger = LoggerFactory.getLogger(PixivHandler.class);
@@ -55,7 +55,8 @@ public class PixivHandler {
 
     public boolean login() {
         try {
-            var response = httpHandler.get(BASE_URL)
+            var response = httpHandler.get(BASE_URL,
+                            "Referer", BASE_URL)
                     .get();
             var content = response.body();
             var loggedIn = content.contains("logout.php") ||
@@ -95,7 +96,8 @@ public class PixivHandler {
         try {
             String ref = BASE_URL + "/artworks/" + id;
             String response = httpHandler.getJson(API_URL + "/illust/" + id +
-                            "?lang=en&ref=" + ref)
+                            "?lang=en&ref=" + ref,
+                            "Referer", BASE_URL)
                     .thenApply(HttpResponse::body)
                     .get();
             var illustrationDetails = objectMapper.readValue(response, IllustrationDetailsResponse.class);
@@ -111,7 +113,8 @@ public class PixivHandler {
         try {
             String ref = BASE_URL + "/artworks/" + id;
             String response = httpHandler.getJson(API_URL + "/illust/" + id + "/pages" +
-                            "?lang=en&ref=" + ref)
+                            "?lang=en&ref=" + ref,
+                            "Referer", BASE_URL)
                     .thenApply(HttpResponse::body)
                     .get();
             var illustrationDetails = objectMapper.readValue(response, IllustrationPagesResponse.class);
@@ -127,7 +130,8 @@ public class PixivHandler {
         try {
             String ref = BASE_URL + "/artworks/" + id;
             String response = httpHandler.getJson(API_URL + "/illust/" + id + "/ugoira_meta" +
-                            "?lang=en&ref=" + ref)
+                            "?lang=en&ref=" + ref,
+                            "Referer", BASE_URL)
                     .thenApply(HttpResponse::body)
                     .get();
             var illustrationDetails = objectMapper.readValue(response, UgoiraMetadataResponse.class);
@@ -146,7 +150,8 @@ public class PixivHandler {
             logger.warn("No image found!");
             return;
         }
-        var imageStream = httpHandler.stream(highestImage.get())
+        var imageStream = httpHandler.stream(highestImage.get(),
+                        "Referer", BASE_URL)
                 .get()
                 .body();
         var fileName = highestImage.get().split("/");
@@ -174,7 +179,8 @@ public class PixivHandler {
                 logger.warn("No image found!");
                 return;
             }
-            var imageStream = httpHandler.stream(highestImage.get())
+            var imageStream = httpHandler.stream(highestImage.get(),
+                            "Referer", BASE_URL)
                     .get()
                     .body();
             var fileName = highestImage.get().split("/");
@@ -198,7 +204,7 @@ public class PixivHandler {
                 if (url == null) {
                     continue;
                 }
-                var response = httpHandler.head(url).get();
+                var response = httpHandler.head(url, "Referer", BASE_URL).get();
                 logger.info("getHighestQualityImage: {}", response);
                 var contentLength = response.headers().firstValueAsLong("Content-Length");
                 if (contentLength.isPresent() && contentLength.getAsLong() < MAX_SIZE) {

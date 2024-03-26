@@ -43,22 +43,22 @@ public class HttpHandler {
         }
     }
 
-    public CompletableFuture<HttpResponse<Void>> head(String uri) {
+    public CompletableFuture<HttpResponse<Void>> head(String uri, String... headers) {
         HttpRequest request = HttpRequest.newBuilder()
                 .HEAD()
                 .uri(URI.create(uri))
                 .header("User-Agent", userAgent)
-                .header("Referer", "https://pixiv.net/")
+                .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.discarding());
     }
 
-    public CompletableFuture<HttpResponse<String>> get(String uri) {
+    public CompletableFuture<HttpResponse<String>> get(String uri, String... headers) {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri))
                 .header("User-Agent", userAgent)
-                .header("Referer", "https://pixiv.net/")
+                .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
@@ -69,19 +69,18 @@ public class HttpHandler {
                 .uri(URI.create(uri))
                 .header("User-Agent", userAgent)
                 .header("Accept", "application/json")
-                .header("Referer", "https://pixiv.net/")
                 .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    public CompletableFuture<HttpResponse<InputStream>> stream(String uri) {
+    public CompletableFuture<HttpResponse<InputStream>> stream(String uri, String... headers) {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri))
                 .header("User-Agent", userAgent)
                 .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
-                .header("Referer", "https://pixiv.net/")
+                .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
     }
