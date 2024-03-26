@@ -10,6 +10,7 @@ import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -69,6 +70,16 @@ public class HttpHandler {
                 .uri(URI.create(uri))
                 .header("User-Agent", userAgent)
                 .header("Accept", "application/json")
+                .headers(headers)
+                .build();
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    public CompletableFuture<HttpResponse<String>> postForm(String uri, String form, String... headers) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .POST(HttpRequest.BodyPublishers.ofString(form))
+                .uri(URI.create(uri))
+                .header("User-Agent", userAgent)
                 .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());

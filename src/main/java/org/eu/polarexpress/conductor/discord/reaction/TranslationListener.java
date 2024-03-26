@@ -1,4 +1,4 @@
-package org.eu.polarexpress.conductor.discord.event;
+package org.eu.polarexpress.conductor.discord.reaction;
 
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.message.ReactionAddEvent;

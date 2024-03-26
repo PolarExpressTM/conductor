@@ -13,10 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.eu.polarexpress.conductor.discord.command.Command;
 import org.eu.polarexpress.conductor.discord.detector.Detector;
 import org.eu.polarexpress.conductor.discord.event.Listener;
-import org.eu.polarexpress.conductor.discord.event.ReactionListener;
+import org.eu.polarexpress.conductor.discord.reaction.ReactionListener;
 import org.eu.polarexpress.conductor.discord.handler.PixivHandler;
 import org.eu.polarexpress.conductor.discord.handler.TranslationHandler;
 import org.eu.polarexpress.conductor.service.DiscordService;
+import org.eu.polarexpress.conductor.util.HttpHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,8 @@ public class DiscordBot {
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
     private final Map<String, Function<Event, Mono<Void>>> listeners = new HashMap<>();
     private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
+    @Getter
+    private final HttpHandler httpHandler;
     @Getter
     private final AudioManager audioManager;
     @Getter
@@ -152,7 +155,7 @@ public class DiscordBot {
             listeners.put(eventClass.getName(), event -> invokeMethod(method, event));
             logger.info("Registered listener for \"{}\"!", eventClass.getName());
         });
-        scanAnnotations("org.eu.polarexpress.conductor.discord.event", ReactionListener.class, method -> {
+        scanAnnotations("org.eu.polarexpress.conductor.discord.reaction", ReactionListener.class, method -> {
             var emoji = method.getAnnotation(ReactionListener.class).emoji();
             if (method.getReturnType() != Mono.class ||
                     method.getParameterCount() != 2 ||
