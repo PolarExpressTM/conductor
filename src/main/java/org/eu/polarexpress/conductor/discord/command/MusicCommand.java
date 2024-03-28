@@ -82,6 +82,17 @@ public class MusicCommand {
                 .then();
     }
 
+    @Command(command = "loop")
+    public static Mono<Void> loop(DiscordBot bot, MessageCreateEvent event) {
+        return event.getMessage().getChannel()
+                .flatMap(channel -> {
+                    var loop = bot.getAudioManager().isLoop();
+                    bot.getAudioManager().setLoop(!loop);
+                    return channel.createMessage("Track is " + (!loop ? "" : "not") + " on loop now!");
+                })
+                .then();
+    }
+
     @Command(command = "clear")
     public static Mono<Void> clear(DiscordBot bot, MessageCreateEvent event) {
         return Mono.justOrEmpty(event.getMessage().getContent())

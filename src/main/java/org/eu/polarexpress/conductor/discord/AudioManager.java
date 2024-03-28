@@ -10,11 +10,10 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
 import discord4j.voice.AudioProvider;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 
 @Component
@@ -24,6 +23,10 @@ public class AudioManager {
     private final AudioPlayer audioPlayer;
     private final AudioProvider provider;
     private final Queue<AudioReference> queue = new ArrayDeque<>();
+    private AudioTrack currentTrack;
+    @Setter
+    @Getter
+    private boolean loop;
 
     public AudioManager() {
         playerManager = new DefaultAudioPlayerManager();
@@ -34,6 +37,9 @@ public class AudioManager {
         audioPlayer.addListener(event -> {
             if (event instanceof TrackEndEvent trackEndEvent) {
                 if (trackEndEvent.endReason.mayStartNext) {
+                    if (loop) {
+                        audioPlayer.playTrack(trackEndEvent.track);
+                    }
                     playNextTrack();
                 }
             }
