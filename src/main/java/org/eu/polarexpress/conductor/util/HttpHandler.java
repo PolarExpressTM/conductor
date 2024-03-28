@@ -1,7 +1,10 @@
 package org.eu.polarexpress.conductor.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -10,23 +13,26 @@ import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Component
 public class HttpHandler {
     private final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
     private final HttpClient client;
+    @Getter
+    private final ObjectMapper objectMapper;
 
     @Value("${util.user-agent}")
     private String userAgent;
 
-    public HttpHandler() {
+    @Autowired
+    public HttpHandler(ObjectMapper objectMapper) {
         CookieHandler.setDefault(new CookieManager());
         client = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .cookieHandler(CookieHandler.getDefault())
                 .build();
+        this.objectMapper = objectMapper;
     }
 
     public void addCookie(String name, String value, String path, String domain, int version, String uri) {

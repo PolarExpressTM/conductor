@@ -4,9 +4,10 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.VoiceChannel;
+import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.VoiceChannelJoinSpec;
+import discord4j.rest.util.Color;
 import org.eu.polarexpress.conductor.discord.DiscordBot;
-import org.eu.polarexpress.conductor.discord.TrackScheduler;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -24,14 +25,67 @@ public class MusicCommand {
                 .then();
     }
 
+    @Command(command = "info")
+    public static Mono<Void> infoTrack(DiscordBot bot, MessageCreateEvent event) {
+        return event.getMessage().getChannel()
+                .flatMap(channel -> {
+                    var currentTrack = bot.getAudioManager().getAudioPlayer().getPlayingTrack();
+                    if (currentTrack != null) {
+                        var embed = EmbedCreateSpec.builder()
+                                .color(Color.of(255, 67, 63))
+                                .title("Current track playing")
+                                .thumbnail(currentTrack.getInfo().artworkUrl)
+                                .addField("Source", String.format("[%s](%s '%s')",
+                                        currentTrack.getInfo().title,
+                                        currentTrack.getInfo().uri,
+                                        currentTrack.getInfo().title), false)
+                                .addField("Author", currentTrack.getInfo().author, false)
+                                .addField("Time",
+                                        currentTrack.getPosition() + "/" + currentTrack.getDuration(),
+                                        false)
+                                .build();
+                        return channel.createMessage(embed);
+                    } else {
+                        return channel.createMessage("No track playing right now...");
+                    }
+                })
+                .then();
+    }
+
     @Command(command = "play")
     public static Mono<Void> play(DiscordBot bot, MessageCreateEvent event) {
-        TrackScheduler scheduler = new TrackScheduler(bot.getAudioManager().getAudioPlayer());
         return Mono.justOrEmpty(event.getMessage().getContent())
                 .map(content -> Arrays.asList(content.split(" ")))
                 .filter(args -> args.size() > 1)
-                .doOnNext(command ->
-                        bot.getAudioManager().getPlayerManager().loadItem(command.get(1), scheduler))
+                .doOnNext(command -> bot.getAudioManager().addTrack(command.get(1)))
+                .then();
+    }
+
+    @Command(command = "stop")
+    public static Mono<Void> stop(DiscordBot bot, MessageCreateEvent event) {
+        return Mono.justOrEmpty(event.getMessage().getContent())
+                .doOnNext(command -> bot.getAudioManager().stopCurrentTrack())
+                .then();
+    }
+
+    @Command(command = "continue")
+    public static Mono<Void> continueTrack(DiscordBot bot, MessageCreateEvent event) {
+        return Mono.justOrEmpty(event.getMessage().getContent())
+                .doOnNext(command -> bot.getAudioManager().playNextTrack())
+                .then();
+    }
+
+    @Command(command = "skip")
+    public static Mono<Void> skip(DiscordBot bot, MessageCreateEvent event) {
+        return Mono.justOrEmpty(event.getMessage().getContent())
+                .doOnNext(command -> bot.getAudioManager().playNextTrack())
+                .then();
+    }
+
+    @Command(command = "clear")
+    public static Mono<Void> clear(DiscordBot bot, MessageCreateEvent event) {
+        return Mono.justOrEmpty(event.getMessage().getContent())
+                .doOnNext(command -> bot.getAudioManager().clearQueue())
                 .then();
     }
 

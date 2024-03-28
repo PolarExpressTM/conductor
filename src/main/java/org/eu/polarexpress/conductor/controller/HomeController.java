@@ -2,6 +2,7 @@ package org.eu.polarexpress.conductor.controller;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import org.eu.polarexpress.conductor.discord.DiscordBot;
 import org.eu.polarexpress.conductor.discord.handler.TranslationHandler;
 import org.eu.polarexpress.conductor.service.DiscordService;
 import org.eu.polarexpress.conductor.service.UserService;
@@ -18,6 +19,7 @@ public class HomeController {
     private final UserService userService;
     private final DiscordService discordService;
     private final TranslationHandler translationHandler;
+    private final DiscordBot discordBot;
 
     @GetMapping
     public ModelAndView home() {
@@ -27,6 +29,8 @@ public class HomeController {
         }
         var servers = discordService.findAllServers();
         var usageData = translationHandler.fetchUsageData();
+        var track = discordBot.getAudioManager().getAudioPlayer().getPlayingTrack();
+        discordBot.getLogger().info("Current track: {} {}", track.getInfo().title, track.getPosition());
         var view = new ModelAndView("home");
         view.addObject("user", user);
         view.addObject("servers", servers);
