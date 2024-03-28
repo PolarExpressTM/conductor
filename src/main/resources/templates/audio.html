@@ -16,23 +16,31 @@
         <div class="col-6">
             <div class="card">
                 <div class="row row-0">
-                    <div class="col-3 order-md-last" th:if="${currentTrack != null}">
-                        <img th:src="${currentTrack.info.artworkUrl}" class="w-100 h-100 object-cover card-img-end"
+                    <div class="col-3 order-md-last">
+                        <img id="current-artwork"
+                             th:src="${currentTrack != null ? currentTrack.info.artworkUrl : '/assets/public/conductor.png'}"
+                             class="w-100 h-100 object-cover card-img-end"
                              alt=":bedge:">
                     </div>
                     <div class="col">
-                        <div class="card-header" th:if="${currentTrack != null}">
-                            <h3 class="card-title" th:text="${currentTrack.info.title}"></h3>
-                            <p class="card-subtitle" th:text="${'by ' + currentTrack.info.author}"></p>
-                        </div>
-                        <div class="card-header" th:if="${currentTrack == null}">
-                            <p class="card-subtitle">No song playing right now...</p>
+                        <div class="card-header">
+                            <h3 class="card-title" id="current-title"
+                                th:text="${currentTrack != null ? currentTrack.info.title : ''}"></h3>
+                            <p class="card-subtitle" id="current-author"
+                               th:text="${'by ' + (currentTrack != null ? currentTrack.info.author : '')}"></p>
                         </div>
                         <div class="card-body">
                             <div class="row align-items-center">
+                                <p id="timeframe-current"></p>
+                                <input id="timeframe-slider" type="range" class="form-range mb-2" value="0" min="0"
+                                       max="0" step="1" oninput="changeTimeframe()">
+                                <p id="timeframe-max"></p>
+                            </div>
+                            <div class="row align-items-center">
                                 <div class="col-auto">
                                     <form class="input-group mb-2" th:action="@{/audio/add}" method="POST">
-                                        <input type="text" name="url" class="form-control" placeholder="Link to song...">
+                                        <input type="text" name="url" class="form-control"
+                                               placeholder="Link to song...">
                                         <button class="btn btn-conductor" type="submit">Add song</button>
                                     </form>
                                 </div>
@@ -124,5 +132,6 @@
     </div>
 
     <script th:src="@{/js/tabler.min.js}"></script>
+    <script th:src="@{/js/audio.js}"></script>
 </body>
 </html>

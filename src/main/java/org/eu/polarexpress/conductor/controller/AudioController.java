@@ -3,8 +3,11 @@ package org.eu.polarexpress.conductor.controller;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.eu.polarexpress.conductor.discord.DiscordBot;
-import org.eu.polarexpress.conductor.service.UserService;
+import org.eu.polarexpress.conductor.dto.TimeframeDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -15,7 +18,7 @@ import java.util.Optional;
 @RequestMapping("/audio")
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED, onConstructor_ = @Autowired)
 public class AudioController {
-    private final UserService userService;
+    private final Logger logger = LoggerFactory.getLogger(AudioController.class);
     private final DiscordBot discordBot;
 
     @GetMapping("/")
@@ -27,6 +30,15 @@ public class AudioController {
         view.addObject("loop", discordBot.getAudioManager().isLoop());
         view.addObject("paused", discordBot.getAudioManager().getAudioPlayer().isPaused());
         return view;
+    }
+
+    @GetMapping("/timeframe")
+    @ResponseBody
+    public ResponseEntity<TimeframeDto> getTimeframe() {
+        return Optional.ofNullable(discordBot.getAudioManager().getAudioPlayer().getPlayingTrack())
+                .map(TimeframeDto::fromAudioTrack)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/pause")

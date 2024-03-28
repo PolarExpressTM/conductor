@@ -36,7 +36,7 @@ public class AudioManager {
             if (event instanceof TrackEndEvent trackEndEvent) {
                 if (trackEndEvent.endReason.mayStartNext) {
                     if (loop) {
-                        audioPlayer.playTrack(trackEndEvent.track);
+                        audioPlayer.playTrack(trackEndEvent.track.makeClone());
                         return;
                     }
                     playNextTrack();
