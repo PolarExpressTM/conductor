@@ -6,15 +6,14 @@ import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.event.TrackEndEvent;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
 import discord4j.voice.AudioProvider;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @Getter
@@ -22,8 +21,7 @@ public class AudioManager {
     private final AudioPlayerManager playerManager;
     private final AudioPlayer audioPlayer;
     private final AudioProvider provider;
-    private final Queue<AudioReference> queue = new ArrayDeque<>();
-    private AudioTrack currentTrack;
+    private final List<AudioReference> queue = new ArrayList<>();
     @Setter
     @Getter
     private boolean loop;
@@ -54,7 +52,7 @@ public class AudioManager {
             playerManager.loadItem(audioRef, scheduler);
             return;
         }
-        queue.offer(audioRef);
+        queue.add(audioRef);
     }
 
     public void stopCurrentTrack() {
@@ -62,10 +60,16 @@ public class AudioManager {
     }
 
     public void playNextTrack() {
-        if (queue.peek() != null) {
+        if (!queue.isEmpty()) {
             TrackScheduler scheduler = new TrackScheduler(audioPlayer);
-            playerManager.loadItem(queue.poll(), scheduler);
+            var track = queue.getFirst();
+            playerManager.loadItem(track, scheduler);
+            queue.remove(track);
         }
+    }
+
+    public void removeTrack(int index) {
+        queue.remove(index);
     }
 
     public void clearQueue() {

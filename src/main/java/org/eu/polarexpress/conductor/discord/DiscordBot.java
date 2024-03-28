@@ -209,7 +209,7 @@ public class DiscordBot {
             }
             return result instanceof Mono ? (Mono<Void>) result : Mono.empty();
         } catch (IllegalAccessException | InvocationTargetException exception) {
-            logger.error(exception.getMessage());
+            logger.error("{}: {}", method.getName(), exception.getMessage());
         }
         return Mono.empty();
     }

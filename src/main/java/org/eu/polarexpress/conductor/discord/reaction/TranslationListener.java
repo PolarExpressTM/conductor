@@ -13,7 +13,7 @@ public class TranslationListener {
         var ev = (ReactionAddEvent) event;
         return ev.getMessage()
                 .publishOn(Schedulers.boundedElastic())
-                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "ZH"))
+                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "zh"))
                 .flatMap(result -> ev.getChannel().flatMap(channel -> channel.createMessage(result)).then())
                 .then();
     }
@@ -23,17 +23,27 @@ public class TranslationListener {
         var ev = (ReactionAddEvent) event;
         return ev.getMessage()
                 .publishOn(Schedulers.boundedElastic())
-                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "DE"))
+                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "de"))
                 .flatMap(result -> ev.getChannel().flatMap(channel -> channel.createMessage(result)).then())
                 .then();
     }
 
     @ReactionListener(emoji = "\uD83C\uDDFA\uD83C\uDDF8")
-    public static Mono<Void> translateEN(DiscordBot bot, Event event) {
+    public static Mono<Void> translateENUS(DiscordBot bot, Event event) {
         var ev = (ReactionAddEvent) event;
         return ev.getMessage()
                 .publishOn(Schedulers.boundedElastic())
-                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "EN"))
+                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "en-US"))
+                .flatMap(result -> ev.getChannel().flatMap(channel -> channel.createMessage(result)).then())
+                .then();
+    }
+
+    @ReactionListener(emoji = "\uD83C\uDDEC\uD83C\uDDE7")
+    public static Mono<Void> translateENGB(DiscordBot bot, Event event) {
+        var ev = (ReactionAddEvent) event;
+        return ev.getMessage()
+                .publishOn(Schedulers.boundedElastic())
+                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "en-GB"))
                 .flatMap(result -> ev.getChannel().flatMap(channel -> channel.createMessage(result)).then())
                 .then();
     }
@@ -43,7 +53,7 @@ public class TranslationListener {
         var ev = (ReactionAddEvent) event;
         return ev.getMessage()
                 .publishOn(Schedulers.boundedElastic())
-                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "FR"))
+                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "fr"))
                 .flatMap(result -> ev.getChannel().flatMap(channel -> channel.createMessage(result)).then())
                 .then();
     }
@@ -53,7 +63,7 @@ public class TranslationListener {
         var ev = (ReactionAddEvent) event;
         return ev.getMessage()
                 .publishOn(Schedulers.boundedElastic())
-                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "JA"))
+                .map(message -> bot.getTranslationHandler().translate(message.getContent(), "ja"))
                 .flatMap(result -> ev.getChannel().flatMap(channel -> channel.createMessage(result)).then())
                 .then();
     }
