@@ -39,6 +39,7 @@ public class AudioManager {
                 if (trackEndEvent.endReason.mayStartNext) {
                     if (loop) {
                         audioPlayer.playTrack(trackEndEvent.track);
+                        return;
                     }
                     playNextTrack();
                 }
