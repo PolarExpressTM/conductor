@@ -24,6 +24,7 @@ import java.util.List;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
     @Bean
     @Primary
     public ObjectMapper objectMapper() {

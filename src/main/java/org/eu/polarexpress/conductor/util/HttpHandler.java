@@ -28,7 +28,7 @@ public class HttpHandler {
     @Autowired
     public HttpHandler(ObjectMapper objectMapper) {
         CookieHandler.setDefault(new CookieManager());
-        client = HttpClient.newBuilder()
+        this.client = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .cookieHandler(CookieHandler.getDefault())
                 .build();

@@ -1,11 +1,14 @@
 package org.eu.polarexpress.conductor.discord.stream;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
 public class MediaUdp {
-    private final BaseMediaConnection mediaConnection;
     private long nonce;
+    @Setter
+    private boolean ready;
 
-    public MediaUdp(BaseMediaConnection mediaConnection) {
-        this.mediaConnection = mediaConnection;
-
+    public MediaUdp() {
     }
 }
