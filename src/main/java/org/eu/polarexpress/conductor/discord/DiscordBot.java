@@ -4,9 +4,13 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
+import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.reaction.ReactionEmoji;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -123,8 +127,28 @@ public class DiscordBot {
                                             .orElse(null))
                                     .apply(ev)))
                     .subscribe();
+            initSlashCommands(client);
+            client.on(ChatInputInteractionEvent.class, event -> {
+                if (event.getCommandName().equals("ping")) {
+                    return event.reply("Pong!");
+                }
+                return null;
+            }).subscribe();
             client.onDisconnect().block();
         }
+    }
+
+    private void initSlashCommands(GatewayDiscordClient client) {
+        long applicationId = client.getRestClient().getApplicationId().block();
+
+        ApplicationCommandRequest greetCmdRequest = ApplicationCommandRequest.builder()
+                .name("ping")
+                .description("just ping")
+                .build();
+
+        client.getRestClient().getApplicationService()
+                .createGlobalApplicationCommand(applicationId, greetCmdRequest)
+                .subscribe();
     }
 
     private void initCommands() {
