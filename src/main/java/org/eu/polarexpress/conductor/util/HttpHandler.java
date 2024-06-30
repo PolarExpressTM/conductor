@@ -93,15 +93,13 @@ public class HttpHandler {
     }
 
     public CompletableFuture<HttpResponse<String>> postForm(String uri,
-                                                            MultiPartBodyPublisher publisher,
-                                                            String... headers) {
+                                                            MultiPartBodyPublisher publisher) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .POST(publisher.build())
                 .header("User-Agent", userAgent)
                 .header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
                 .timeout(Duration.ofMinutes(1))
-                .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
