@@ -13,6 +13,7 @@ import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -86,6 +87,20 @@ public class HttpHandler {
                 .POST(HttpRequest.BodyPublishers.ofString(form))
                 .uri(URI.create(uri))
                 .header("User-Agent", userAgent)
+                .headers(headers)
+                .build();
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    public CompletableFuture<HttpResponse<String>> postForm(String uri,
+                                                            MultiPartBodyPublisher publisher,
+                                                            String... headers) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .POST(publisher.build())
+                .header("User-Agent", userAgent)
+                .header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
+                .timeout(Duration.ofMinutes(1))
                 .headers(headers)
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());

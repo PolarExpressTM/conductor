@@ -62,6 +62,11 @@
 			<artifactId>ffmpeg4j</artifactId>
 			<version>-4f7db5710c-1</version>
 		</dependency>
+		<dependency>
+			<groupId>com.tinify</groupId>
+			<artifactId>tinify</artifactId>
+			<version>RELEASE</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

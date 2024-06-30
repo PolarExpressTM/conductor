@@ -1,5 +1,6 @@
 package org.eu.polarexpress.conductor.discord;
 
+import com.tinify.Tinify;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
@@ -52,6 +53,8 @@ public class DiscordBot {
     private String prefix;
     @Value("${discord.token}")
     private String token;
+    @Value("${util.tinify-key}")
+    private String tinifyKey;
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
     private final Map<String, Function<Event, Mono<Void>>> listeners = new HashMap<>();
     private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
@@ -72,6 +75,7 @@ public class DiscordBot {
 
     @EventListener(ApplicationReadyEvent.class)
     public void startDiscordBot() {
+        Tinify.setKey(tinifyKey);
         logger.info("Initiating handlers...");
         pixivHandler.initCookie();
         translationHandler.initTranslator();
