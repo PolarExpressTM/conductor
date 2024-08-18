@@ -42,9 +42,10 @@ public class SauceListener {
             return null;
         }
         var imageUrl = attachment.getUrl();
-        try(var fetchedImage = bot.getHttpHandler().stream(imageUrl).get().body()) {
+        try (var fetchedImage = bot.getHttpHandler().stream(imageUrl).get().body()) {
             var urlParts = imageUrl.split("\\.");
-            var type = urlParts[urlParts.length - 1].contains("?") ? urlParts[urlParts.length - 1].split("\\?")[0] : urlParts[urlParts.length - 1];
+            var type = urlParts[urlParts.length - 1].contains("?") ?
+                    urlParts[urlParts.length - 1].split("\\?")[0] : urlParts[urlParts.length - 1];
             var processedImage = ImageUtil.compressImage(fetchedImage, type);
             MultiPartBodyPublisher publisher = new MultiPartBodyPublisher()
                     .addPart("url", "Paste Image URL")

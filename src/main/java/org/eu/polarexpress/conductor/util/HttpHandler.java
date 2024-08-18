@@ -52,43 +52,80 @@ public class HttpHandler {
     }
 
     public CompletableFuture<HttpResponse<Void>> head(String uri, String... headers) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .HEAD()
-                .uri(URI.create(uri))
-                .header("User-Agent", userAgent)
-                .headers(headers)
-                .build();
+        HttpRequest request;
+        if (headers.length == 0) {
+            request = HttpRequest.newBuilder()
+                    .HEAD()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .build();
+        } else {
+            request = HttpRequest.newBuilder()
+                    .HEAD()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .headers(headers)
+                    .build();
+        }
         return client.sendAsync(request, HttpResponse.BodyHandlers.discarding());
     }
 
     public CompletableFuture<HttpResponse<String>> get(String uri, String... headers) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(uri))
-                .header("User-Agent", userAgent)
-                .headers(headers)
-                .build();
+        HttpRequest request;
+        if (headers.length == 0) {
+            request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .build();
+        } else {
+            request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .headers(headers)
+                    .build();
+        }
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
     public CompletableFuture<HttpResponse<String>> getJson(String uri, String... headers) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(uri))
-                .header("User-Agent", userAgent)
-                .header("Accept", "application/json")
-                .headers(headers)
-                .build();
+        HttpRequest request;
+        if (headers.length == 0) {
+            request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .header("Accept", "application/json")
+                    .build();
+        } else {
+            request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .header("Accept", "application/json")
+                    .headers(headers)
+                    .build();
+        }
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
     public CompletableFuture<HttpResponse<String>> postForm(String uri, String form, String... headers) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(form))
-                .uri(URI.create(uri))
-                .header("User-Agent", userAgent)
-                .headers(headers)
-                .build();
+        HttpRequest request;
+        if (headers.length == 0) {
+            request = HttpRequest.newBuilder()
+                    .POST(HttpRequest.BodyPublishers.ofString(form))
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .build();
+        } else {
+            request = HttpRequest.newBuilder()
+                    .POST(HttpRequest.BodyPublishers.ofString(form))
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .headers(headers)
+                    .build();
+        }
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
@@ -105,13 +142,23 @@ public class HttpHandler {
     }
 
     public CompletableFuture<HttpResponse<InputStream>> stream(String uri, String... headers) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(uri))
-                .header("User-Agent", userAgent)
-                .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
-                .headers(headers)
-                .build();
+        HttpRequest request;
+        if (headers.length == 0) {
+            request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+                    .build();
+        } else {
+            request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .header("User-Agent", userAgent)
+                    .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+                    .headers(headers)
+                    .build();
+        }
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
     }
 
