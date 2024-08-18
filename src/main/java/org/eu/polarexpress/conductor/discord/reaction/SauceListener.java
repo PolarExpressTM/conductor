@@ -1,8 +1,5 @@
 package org.eu.polarexpress.conductor.discord.reaction;
 
-import com.tinify.Options;
-import com.tinify.Source;
-import com.tinify.Tinify;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Attachment;
@@ -10,6 +7,7 @@ import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.eu.polarexpress.conductor.discord.DiscordBot;
+import org.eu.polarexpress.conductor.util.ImageUtil;
 import org.eu.polarexpress.conductor.util.MultiPartBodyPublisher;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -19,10 +17,8 @@ import reactor.core.scheduler.Schedulers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Optional;
-
-import static org.eu.polarexpress.conductor.util.OtherUtils.getFormDataAsString;
+import java.util.concurrent.ExecutionException;
 
 public class SauceListener {
     private static final String API_URL = "https://saucenao.com/search.php";
@@ -45,14 +41,14 @@ public class SauceListener {
         if (attachment == null) {
             return null;
         }
-        try {
-            var imageUrl = attachment.getUrl();
-            Source tinifySource = Tinify.fromUrl(imageUrl);
-            tinifySource = tinifySource.convert(new Options().with("type", "image/png"));
-            var tinifyBuffer = tinifySource.toBuffer();
+        var imageUrl = attachment.getUrl();
+        try(var fetchedImage = bot.getHttpHandler().stream(imageUrl).get().body()) {
+            var urlParts = imageUrl.split("\\.");
+            var type = urlParts[urlParts.length - 1].contains("?") ? urlParts[urlParts.length - 1].split("\\?")[0] : urlParts[urlParts.length - 1];
+            var processedImage = ImageUtil.compressImage(fetchedImage, type);
             MultiPartBodyPublisher publisher = new MultiPartBodyPublisher()
                     .addPart("url", "Paste Image URL")
-                    .addPart("file", () -> new ByteArrayInputStream(tinifyBuffer),
+                    .addPart("file", () -> new ByteArrayInputStream(processedImage),
                             "give_sauce_please.png", "image/png");
             var resultPage = bot.getHttpHandler().postForm(API_URL,
                             publisher)
@@ -116,6 +112,8 @@ public class SauceListener {
                     .footer("Polar bear meat is delicious!", FOOTER_URL)
                     .build();
         } catch (IOException ignored) {
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
         return null;
     }
