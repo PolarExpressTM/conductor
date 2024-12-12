@@ -10,4 +10,5 @@ public class DiscordConfig {
     private String token;
     private String deepl;
     private String userAgent;
+    private String mode;
 }

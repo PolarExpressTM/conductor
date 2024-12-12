@@ -1,6 +1,5 @@
 package org.eu.polarexpress.conductor.discord;
 
-import com.tinify.Tinify;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
@@ -8,14 +7,12 @@ import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
-import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.reaction.ReactionEmoji;
-import discord4j.discordjson.json.ApplicationCommandOptionData;
-import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.eu.polarexpress.conductor.discord.command.Command;
+import org.eu.polarexpress.conductor.discord.command.SlashCommandListener;
 import org.eu.polarexpress.conductor.discord.detector.Detector;
 import org.eu.polarexpress.conductor.discord.event.Listener;
 import org.eu.polarexpress.conductor.discord.reaction.ReactionListener;
@@ -53,8 +50,6 @@ public class DiscordBot {
     private String prefix;
     @Value("${discord.token}")
     private String token;
-    @Value("${util.tinify-key}")
-    private String tinifyKey;
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
     private final Map<String, Function<Event, Mono<Void>>> listeners = new HashMap<>();
     private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
@@ -75,7 +70,6 @@ public class DiscordBot {
 
     @EventListener(ApplicationReadyEvent.class)
     public void startDiscordBot() {
-        Tinify.setKey(tinifyKey);
         logger.info("Initiating handlers...");
         pixivHandler.initCookie();
         translationHandler.initTranslator();
@@ -131,28 +125,16 @@ public class DiscordBot {
                                             .orElse(null))
                                     .apply(ev)))
                     .subscribe();
-            initSlashCommands(client);
-            client.on(ChatInputInteractionEvent.class, event -> {
-                if (event.getCommandName().equals("ping")) {
-                    return event.reply("Pong!");
-                }
-                return null;
-            }).subscribe();
+            try {
+                new GlobalCommandRegistrar(client.getRestClient()).registerCommands(List.of(
+                        "tierlist.json"
+                ));
+            } catch (Exception e) {
+                logger.error("Failed to load slash commands", e);
+            }
+            client.on(ChatInputInteractionEvent.class, SlashCommandListener::handle).subscribe();
             client.onDisconnect().block();
         }
-    }
-
-    private void initSlashCommands(GatewayDiscordClient client) {
-        long applicationId = client.getRestClient().getApplicationId().block();
-
-        ApplicationCommandRequest greetCmdRequest = ApplicationCommandRequest.builder()
-                .name("ping")
-                .description("just ping")
-                .build();
-
-        client.getRestClient().getApplicationService()
-                .createGlobalApplicationCommand(applicationId, greetCmdRequest)
-                .subscribe();
     }
 
     private void initCommands() {

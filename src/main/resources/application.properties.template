@@ -5,13 +5,12 @@ discord.user-agent=Discord Bot (https://github.com/PolarExpressTM/conductor)
 pixiv.session=
 pixiv.max-pages=5
 util.user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
-util.tinify-key=
+discord.mode=default
 
 server.port=7790
 
 spring.servlet.multipart.max-file-size=5000MB
 server.servlet.session.cookie.secure=true
-spring.devtools.restart.additional-paths=templates/**,static/**
 
 spring.datasource.url=jdbc:h2:file:./conductor
 spring.datasource.username=
