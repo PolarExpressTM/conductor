@@ -3,7 +3,7 @@
   "description": "Turn xmas on or off",
   "options": [
     {
-      "name": "Xmas",
+      "name": "mode",
       "description": "Turn xmas on or off",
       "type": 5,
       "required": true
