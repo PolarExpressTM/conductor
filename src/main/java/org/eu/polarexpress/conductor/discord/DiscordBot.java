@@ -8,6 +8,8 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.reaction.ReactionEmoji;
+import discord4j.gateway.intent.Intent;
+import discord4j.gateway.intent.IntentSet;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -88,7 +90,8 @@ public class DiscordBot {
     }
 
     public void connect() {
-        client = DiscordClientBuilder.create(token).build()
+        client = DiscordClientBuilder.create(token).build().gateway()
+                .setEnabledIntents(IntentSet.of(Intent.GUILD_MEMBERS))
                 .login()
                 .block();
         if (client != null) {
