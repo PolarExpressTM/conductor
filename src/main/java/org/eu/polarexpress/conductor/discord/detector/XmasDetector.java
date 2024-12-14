@@ -1,7 +1,6 @@
 package org.eu.polarexpress.conductor.discord.detector;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.Message;
 import org.eu.polarexpress.conductor.discord.DiscordBot;
 
 import java.time.Duration;
@@ -29,15 +28,19 @@ public class XmasDetector {
             var whitelist = List.of("hohoho", "merrychristmas", "padoru", "xmas");
             var userId = event.getMember().map(member -> member.getId().asString()).orElse("");
             if (!userId.isEmpty() && whitelist.stream().noneMatch(cleanContent::contains)) {
-                event.getMessage().delete().block();
-                event.getMessage().getChannel()
-                        .flatMap(channel ->
-                                channel.createMessage("<@" +
-                                        userId +
-                                        "> You have been jollyfied!" +
-                                        " Your messages have to contain any of the whitelisted words!"))
-                        .delayElement(Duration.of(4, ChronoUnit.SECONDS))
-                        .map(message -> message.delete().block());
+                try {
+                    event.getMessage().delete().block();
+                    event.getMessage().getChannel()
+                            .flatMap(channel ->
+                                    channel.createMessage("<@" +
+                                            userId +
+                                            "> You have been jollyfied!" +
+                                            " Your messages have to contain any of the whitelisted words!"))
+                            .delayElement(Duration.of(4, ChronoUnit.SECONDS))
+                            .subscribe(message -> message.delete().block());
+                } catch (Exception exception) {
+                    bot.getLogger().error("Xmas failed: {}", exception.getMessage());
+                }
             }
         }
     }
