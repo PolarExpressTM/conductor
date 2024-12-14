@@ -19,8 +19,8 @@ public class XmasCommand implements SlashCommand {
                 .map(ApplicationCommandInteractionOptionValue::asBoolean)
                 .orElse(false);
         var roleId = event.getInteraction().getGuild().map(guild ->
-                        guild.getRoles().filter(role -> role.getName().equalsIgnoreCase("xmasarrived"))
-                                .blockFirst())
+                guild.getRoles().filter(role -> role.getName().equalsIgnoreCase("xmasarrived"))
+                        .blockFirst())
                 .block();
         if (roleId == null) {
             return event.deferReply().then(event.createFollowup().withContent("Role 'xmasarrived' not found!"));
@@ -35,7 +35,7 @@ public class XmasCommand implements SlashCommand {
                                 member.removeRole(roleId.getId()).block();
                             }
                             return Mono.empty();
-                        }));
+                        })).block();
         return event.deferReply().then(event.createFollowup().withContent(
                 (xmas ? "Added" : "Removed") + " xmas role " + (xmas ? "to" : "from") + " everyone!")
         );
