@@ -91,7 +91,9 @@ public class DiscordBot {
 
     public void connect() {
         client = DiscordClientBuilder.create(token).build().gateway()
-                .setEnabledIntents(IntentSet.of(Intent.GUILD_MEMBERS))
+                .setEnabledIntents(IntentSet.of(
+                        Intent.GUILD_MEMBERS, Intent.GUILD_PRESENCES, Intent.GUILD_MEMBERS, Intent.MESSAGE_CONTENT
+                ))
                 .login()
                 .block();
         if (client != null) {
