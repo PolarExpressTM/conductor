@@ -23,24 +23,20 @@ public class XmasDetector {
                 .map(member -> member.getRoles().any(role ->
                         role.getName().equalsIgnoreCase("xmasarrived")).block())
                 .orElse(false);
-        if (isNotBot &&  notEmpty && notLink && include) {
+        if (isNotBot && notEmpty && notLink && include) {
             var cleanContent = event.getMessage().getContent().replaceAll(" ", "").toLowerCase();
             var whitelist = List.of("hohoho", "merrychristmas", "padoru", "xmas");
             var userId = event.getMember().map(member -> member.getId().asString()).orElse("");
             if (!userId.isEmpty() && whitelist.stream().noneMatch(cleanContent::contains)) {
-                try {
-                    event.getMessage().delete().block();
-                    event.getMessage().getChannel()
-                            .flatMap(channel ->
-                                    channel.createMessage("<@" +
-                                            userId +
-                                            "> You have been jollyfied!" +
-                                            " Your messages have to contain any of the whitelisted words!"))
-                            .delayElement(Duration.of(4, ChronoUnit.SECONDS))
-                            .subscribe(message -> message.delete().block());
-                } catch (Exception exception) {
-                    bot.getLogger().error("Xmas failed: {}", exception.getMessage());
-                }
+                event.getMessage().delete().block();
+                event.getMessage().getChannel()
+                        .flatMap(channel ->
+                                channel.createMessage("<@" +
+                                        userId +
+                                        "> You have been jollyfied!" +
+                                        " Your messages have to contain any of the whitelisted words!"))
+                        .delayElement(Duration.of(4, ChronoUnit.SECONDS))
+                        .subscribe(message -> message.delete().block());
             }
         }
     }

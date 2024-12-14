@@ -1,0 +1,12 @@
+{
+  "name": "xmas",
+  "description": "Turn xmas on or off",
+  "options": [
+    {
+      "name": "Xmas",
+      "description": "Turn xmas on or off",
+      "type": 5,
+      "required": true
+    }
+  ]
+}
