@@ -47,9 +47,13 @@ import java.util.function.Function;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED, onConstructor_ = @Autowired)
 public class DiscordBot {
     @Value("${discord.prefix}")
+    @Getter
     private String prefix;
     @Value("${discord.token}")
     private String token;
+    @Value("${discord.mode}")
+    @Getter
+    private String mode;
     private final Map<String, Function<MessageCreateEvent, Mono<Void>>> commands = new HashMap<>();
     private final Map<String, Function<Event, Mono<Void>>> listeners = new HashMap<>();
     private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
@@ -203,11 +207,12 @@ public class DiscordBot {
                     logger.error(exception.getMessage());
                 }
             });
-            logger.info("Registered detector \"{}\"!", regex);
+            logger.info("Registered detector \"{}\" for \"{}\"!", regex, method.getName());
         });
     }
 
     private Mono<Void> invokeMethod(Method method, Event event) {
+        logger.info("Invoked Method \"{}\"", method.getName());
         try {
             var access = method.canAccess(null);
             if (!access) {
