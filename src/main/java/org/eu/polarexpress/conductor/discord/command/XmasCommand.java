@@ -5,6 +5,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 public class XmasCommand implements SlashCommand {
     @Override
@@ -27,6 +28,7 @@ public class XmasCommand implements SlashCommand {
         }
         event.getInteraction().getGuild().map(guild ->
                 guild.getMembers()
+                        .publishOn(Schedulers.boundedElastic())
                         .filter(member -> !member.isBot())
                         .flatMap(member -> {
                             if (xmas) {
@@ -35,7 +37,7 @@ public class XmasCommand implements SlashCommand {
                                 member.removeRole(roleId.getId()).block();
                             }
                             return Mono.empty();
-                        })).block();
+                        })).subscribe();
         return event.deferReply().then(event.createFollowup().withContent(
                 (xmas ? "Added" : "Removed") + " xmas role " + (xmas ? "to" : "from") + " everyone!")
         );
