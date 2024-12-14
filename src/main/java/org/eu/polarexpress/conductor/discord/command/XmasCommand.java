@@ -14,7 +14,7 @@ public class XmasCommand implements SlashCommand {
 
     @Override
     public Mono<Message> handle(ChatInputInteractionEvent event) {
-        var xmas = event.getOption("xmas")
+        var xmas = event.getOption("mode")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asBoolean)
                 .orElse(false);
