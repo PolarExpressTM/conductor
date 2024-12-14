@@ -131,7 +131,8 @@ public class DiscordBot {
                     .subscribe();
             try {
                 new GlobalCommandRegistrar(client.getRestClient()).registerCommands(List.of(
-                        "tierlist.json"
+                        "tierlist.json",
+                        "xmas.json"
                 ));
             } catch (Exception e) {
                 logger.error("Failed to load slash commands", e);
