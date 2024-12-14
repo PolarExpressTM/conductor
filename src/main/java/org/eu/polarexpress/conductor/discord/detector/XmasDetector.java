@@ -25,7 +25,7 @@ public class XmasDetector {
                 .orElse(false);
         if (isNotBot && notEmpty && notLink && include) {
             var cleanContent = event.getMessage().getContent().replaceAll(" ", "").toLowerCase();
-            var whitelist = List.of("hohoho", "merrychristmas", "padoru", "xmas");
+            var whitelist = List.of("hohoho", "merrychristmas", "padoru", "xmas", "jolly", "merry");
             var userId = event.getMember().map(member -> member.getId().asString()).orElse("");
             if (!userId.isEmpty() && whitelist.stream().noneMatch(cleanContent::contains)) {
                 event.getMessage().delete().block();
