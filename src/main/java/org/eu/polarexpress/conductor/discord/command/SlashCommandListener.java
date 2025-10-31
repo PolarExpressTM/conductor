@@ -16,6 +16,7 @@ public class SlashCommandListener {
         //We register our commands here when the class is initialized
         commands.add(new TierListCommand());
         commands.add(new XmasCommand());
+        commands.add(new LandmineCommand());
     }
 
     public static Mono<Message> handle(ChatInputInteractionEvent event) {

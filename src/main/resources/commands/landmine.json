@@ -1,0 +1,12 @@
+{
+  "name": "landmine",
+  "description": "Turn landmine on or off",
+  "options": [
+    {
+      "name": "mode",
+      "description": "Turn landmine on or off",
+      "type": 5,
+      "required": true
+    }
+  ]
+}

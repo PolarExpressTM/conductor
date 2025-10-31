@@ -38,7 +38,7 @@ public class TierListCommand implements SlashCommand {
             webDriver.get("https://www.prydwen.gg/wuthering-waves/tier-list");
         } catch (Exception ignored) {
         }
-        webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+        webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
         WebElement webElement = webDriver.findElement(By.cssSelector(".custom-tier-list-ww"));
         var screenshot = new AShot().takeScreenshot(webDriver, webElement);
         ByteArrayOutputStream os = new ByteArrayOutputStream();

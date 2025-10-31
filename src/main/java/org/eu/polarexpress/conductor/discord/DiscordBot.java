@@ -1,5 +1,6 @@
 package org.eu.polarexpress.conductor.discord;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
@@ -60,6 +61,8 @@ public class DiscordBot {
     private final Map<String, Function<Event, Mono<Void>>> listeners = new HashMap<>();
     private final Map<String, Consumer<MessageCreateEvent>> detectors = new HashMap<>();
     @Getter
+    private final Map<String, Long> mutedUsers = new HashMap<>();
+    @Getter
     private final HttpHandler httpHandler;
     @Getter
     private final AudioManager audioManager;
@@ -92,7 +95,8 @@ public class DiscordBot {
     public void connect() {
         client = DiscordClientBuilder.create(token).build().gateway()
                 .setEnabledIntents(IntentSet.of(
-                        Intent.GUILD_MEMBERS, Intent.GUILD_PRESENCES, Intent.GUILD_MESSAGES, Intent.MESSAGE_CONTENT
+                        Intent.GUILD_MEMBERS, Intent.GUILD_PRESENCES, Intent.GUILD_MESSAGES,
+                        Intent.MESSAGE_CONTENT, Intent.GUILD_MESSAGE_REACTIONS
                 ))
                 .login()
                 .block();
@@ -126,18 +130,26 @@ public class DiscordBot {
                     .subscribe();
             client.getEventDispatcher().on(ReactionAddEvent.class)
                     .flatMap(event -> Mono.just(event)
-                            .filter(ev -> listeners.containsKey(ev.getEmoji().asUnicodeEmoji()
-                                    .map(ReactionEmoji.Unicode::getRaw)
-                                    .orElse(null)))
+                            .filter(ev -> listeners.containsKey(
+                                    ev.getEmoji().asUnicodeEmoji()
+                                            .map(ReactionEmoji.Unicode::getRaw)
+                                            .orElse(ev.getEmoji().asCustomEmoji()
+                                                    .map(ReactionEmoji.Custom::getId)
+                                                    .map(Snowflake::asString)
+                                                    .orElse(null))))
                             .flatMap(ev -> listeners.get(ev.getEmoji().asUnicodeEmoji()
                                             .map(ReactionEmoji.Unicode::getRaw)
-                                            .orElse(null))
+                                            .orElse(ev.getEmoji().asCustomEmoji()
+                                                    .map(ReactionEmoji.Custom::getId)
+                                                    .map(Snowflake::asString)
+                                                    .orElse(null)))
                                     .apply(ev)))
                     .subscribe();
             try {
                 new GlobalCommandRegistrar(client.getRestClient()).registerCommands(List.of(
                         "tierlist.json",
-                        "xmas.json"
+                        "xmas.json",
+                        "landmine.json"
                 ));
             } catch (Exception e) {
                 logger.error("Failed to load slash commands", e);
@@ -252,8 +264,7 @@ public class DiscordBot {
      * Scans all classes accessible from the context class loader which belong
      * to the given package and subpackages.
      *
-     * @param packageName
-     *            The base package
+     * @param packageName The base package
      * @return The classes
      */
     private List<Class<?>> getClasses(String packageName) {
@@ -262,15 +273,13 @@ public class DiscordBot {
             String path = packageName.replace('.', '/');
             Enumeration<URL> resources = classLoader.getResources(path);
             List<File> dirs = new ArrayList<>();
-            while (resources.hasMoreElements())
-            {
+            while (resources.hasMoreElements()) {
                 URL resource = resources.nextElement();
                 URI uri = new URI(resource.toString());
                 dirs.add(new File(uri.getPath()));
             }
             List<Class<?>> classes = new ArrayList<>();
-            for (File directory : dirs)
-            {
+            for (File directory : dirs) {
                 classes.addAll(findClasses(directory, packageName));
             }
             return classes;
@@ -284,31 +293,23 @@ public class DiscordBot {
      * Recursive method used to find all classes in a given directory and
      * sub dirs.
      *
-     * @param directory
-     *            The base directory
-     * @param packageName
-     *            The package name for classes found inside the base directory
+     * @param directory   The base directory
+     * @param packageName The package name for classes found inside the base directory
      * @return The classes
      */
-    private List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException
-    {
+    private List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException {
         List<Class<?>> classes = new ArrayList<>();
-        if (!directory.exists())
-        {
+        if (!directory.exists()) {
             return classes;
         }
         File[] files = directory.listFiles();
         if (files == null) {
             return List.of();
         }
-        for (File file : files)
-        {
-            if (file.isDirectory())
-            {
+        for (File file : files) {
+            if (file.isDirectory()) {
                 classes.addAll(findClasses(file, packageName + "." + file.getName()));
-            }
-            else if (file.getName().endsWith(".class"))
-            {
+            } else if (file.getName().endsWith(".class")) {
                 classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
             }
         }
